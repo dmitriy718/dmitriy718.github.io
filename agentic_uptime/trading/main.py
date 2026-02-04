@@ -12,7 +12,7 @@ from .exchanges.binance_us import BinanceUSClient, BinanceUSConfig
 from .exchanges.paper import PaperConfig, PaperExchangeClient
 from .explainability import DecisionJournal
 from .market_data import CSVMarketData, ExchangeMarketData, RollingVolatility
-from .models import PortfolioState
+from .models import PortfolioState, Position
 from .risk import RiskEngine
 from .slippage import SlippageGuard
 
@@ -100,7 +100,25 @@ def _run_live(config) -> None:
         if not live_exchange:
             raise SystemExit("Live mode requires binance_us exchange config")
         exchange = live_exchange
-        portfolio = exchange.get_portfolio()
+        balances = exchange.get_account()
+        cash = balances.get(config.exchange.cash_asset, 0.0)
+        base_asset = config.market_data.symbol.replace(config.exchange.cash_asset, "")
+        base_qty = balances.get(base_asset, 0.0)
+        snapshot = market_data.get_snapshot(config.market_data.symbol)
+        positions = {}
+        if base_qty:
+            positions[config.market_data.symbol] = Position(
+                symbol=config.market_data.symbol,
+                quantity=base_qty,
+                avg_price=snapshot.last,
+            )
+        equity = cash + base_qty * snapshot.last
+        portfolio = PortfolioState(
+            cash=cash,
+            positions=positions,
+            equity=equity,
+            peak_equity=equity,
+        )
     else:
         portfolio = PortfolioState(cash=config.starting_cash)
         exchange = PaperExchangeClient(
