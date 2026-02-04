@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
+import urllib.parse
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -118,7 +119,7 @@ class BinanceUSClient:
 
     @staticmethod
     def _encode_params(params: Dict[str, str]) -> str:
-        return "&".join(f"{k}={params[k]}" for k in sorted(params.keys()))
+        return urllib.parse.urlencode({k: params[k] for k in sorted(params.keys())})
 
     @staticmethod
     def _map_status(status: str) -> str:
