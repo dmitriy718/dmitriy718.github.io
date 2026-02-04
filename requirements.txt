@@ -9,3 +9,6 @@ psycopg[binary]
 pymysql
 fastapi
 uvicorn
+pytest
+pytest-asyncio
+respx
