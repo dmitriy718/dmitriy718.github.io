@@ -1,4 +1,3 @@
-import asyncio
 import hmac
 import hashlib
 from pathlib import Path
@@ -13,15 +12,16 @@ from agentic_uptime.webhooks.server import create_app
 from agentic_uptime.utils.subprocess_runner import CommandResult
 
 
-def _queue_with_loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    queue = asyncio.Queue()
-    return queue, loop
+class DummyQueue:
+    def __init__(self):
+        self.items = []
+
+    async def put(self, item):
+        self.items.append(item)
 
 
 def test_webhook_secret_header() -> None:
-    queue, loop = _queue_with_loop()
+    queue = DummyQueue()
     app = create_app(queue, shared_secret="secret")
     client = TestClient(app)
     response = client.post(
@@ -29,13 +29,11 @@ def test_webhook_secret_header() -> None:
         headers={"X-Webhook-Secret": "secret"},
         json={"event": "deploy"},
     )
-    asyncio.set_event_loop(None)
-    loop.close()
     assert response.status_code == 200
 
 
 def test_webhook_signature_verification() -> None:
-    queue, loop = _queue_with_loop()
+    queue = DummyQueue()
     app = create_app(queue, shared_secret="secret")
     client = TestClient(app)
     body = b'{"event":"deploy"}'
@@ -46,8 +44,6 @@ def test_webhook_signature_verification() -> None:
         headers={"X-Hub-Signature-256": signature, "Content-Type": "application/json"},
         data=body,
     )
-    asyncio.set_event_loop(None)
-    loop.close()
     assert response.status_code == 200
 
 
