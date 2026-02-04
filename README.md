@@ -13,6 +13,8 @@ Production-ready autonomous AI agent for monitoring and maintaining high-availab
 - **Notifications** for Slack, Email, and Telegram.
 - **Webhook server** to trigger on external events.
 - **Persistent memory** via SQLite for incident tracking.
+- **Agentic trading engine** with market-aware risk, slippage protection, backtesting,
+  explainable trade decisions, and learning loop for parameter tuning.
 
 ## Architecture
 
@@ -29,6 +31,7 @@ agentic_uptime/
   notifications/          # Slack/Email/Telegram
   webhooks/               # FastAPI webhook receiver
   integrations/           # GitHub/GitLab deployments
+  trading/                # Agentic trading engine
 ```
 
 ## Quick Start (Local)
@@ -69,6 +72,37 @@ Edit `config.yml` to define:
 - **RBAC roles** for allowed actions
 
 Use `.env` to store secrets and API keys (OpenAI, Slack, GitHub, etc).
+
+## Trading Engine
+
+The trading engine provides:
+- **Market-aware risk engine** (max position, exposure, drawdown, volatility, spread limits).
+- **Slippage protection** with fallback to limit orders.
+- **Strategy sandbox/backtest** with deterministic logs.
+- **Self-healing execution layer** with retries and circuit breakers.
+- **Explainable decisions & learning loop** with JSONL journals and adjustments.
+
+### Trading Backtest
+
+```bash
+cp trading_config.example.yml trading_config.yml
+python -m agentic_uptime.trading.main --config trading_config.yml
+```
+
+### Paper / Live
+
+Set Binance.US credentials in `.env`:
+```
+BINANCE_US_API_KEY=...
+BINANCE_US_API_SECRET=...
+```
+
+Then update `trading_config.yml`:
+```yaml
+mode: paper   # or live
+exchange:
+  type: binance_us
+```
 
 ## Auto-Healing Flow
 
@@ -153,5 +187,6 @@ curl -X POST http://localhost:8080/webhook \
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
+├── trading_config.example.yml
 └── .env.example
 ```
