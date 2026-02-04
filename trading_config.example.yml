@@ -1,0 +1,52 @@
+mode: backtest
+log_dir: logs
+journal_path: logs/trading_journal.jsonl
+starting_cash: 10000
+poll_interval_sec: 5
+
+risk:
+  max_position_pct: 0.2
+  max_notional_per_trade: 2000
+  max_daily_loss: 500
+  max_drawdown_pct: 0.2
+  max_volatility: 0.08
+  max_order_qty: 1
+  max_open_positions: 5
+  max_exposure_pct: 0.8
+  min_cash_pct: 0.1
+  allow_short: false
+  max_spread_bps: 50
+
+execution:
+  max_retries: 2
+  retry_backoff_sec: 0.5
+  max_consecutive_failures: 3
+  circuit_breaker_timeout_sec: 60
+  fallback_to_limit: true
+  limit_price_offset_bps: 10
+  max_latency_ms: 2000
+
+slippage:
+  max_slippage_bps: 50
+  max_price_impact_bps: 75
+
+strategy:
+  type: ma_cross
+  symbol: BTCUSD
+  short_window: 5
+  long_window: 20
+  order_size: 0.01
+
+market_data:
+  type: csv
+  symbol: BTCUSD
+  csv_path: data/btcusd.csv
+  spread_bps: 10
+  volatility_window: 20
+
+exchange:
+  type: paper
+  api_key_env: BINANCE_US_API_KEY
+  api_secret_env: BINANCE_US_API_SECRET
+  base_url: https://api.binance.us
+  cash_asset: USD
