@@ -1,0 +1,167 @@
+agent:
+  name: uptime-agent
+  role: admin
+
+paths:
+  data_dir: data
+  logs_dir: logs
+  audit_log: logs/audit.jsonl
+  memory_db: data/memory.sqlite
+
+rbac_roles:
+  - name: admin
+    allow:
+      - "*"
+
+llm:
+  enabled: true
+  provider: openai
+  model: gpt-4o-mini
+  api_key_env: OPENAI_API_KEY
+  timeout_sec: 30
+  max_tokens: 800
+
+notifications:
+  slack:
+    enabled: false
+    webhook_url_env: SLACK_WEBHOOK_URL
+  email:
+    enabled: false
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    username_env: SMTP_USER
+    password_env: SMTP_PASSWORD
+    from_addr: agent@example.com
+    to_addrs:
+      - oncall@example.com
+  telegram:
+    enabled: false
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    chat_id: "000000000"
+
+webhooks:
+  enabled: false
+  host: 0.0.0.0
+  port: 8080
+  shared_secret_env: WEBHOOK_SECRET
+
+checks:
+  - name: public-api
+    type: http
+    url: https://example.com/health
+    expected_status: [200]
+    interval_sec: 30
+    timeout_sec: 5
+    max_latency_ms: 500
+    service: web-api
+
+  - name: redis-port
+    type: tcp
+    host: 127.0.0.1
+    port: 6379
+    interval_sec: 20
+    service: cache
+
+  - name: web-process
+    type: process
+    process_name: nginx
+    min_count: 1
+    max_cpu_percent: 80
+    max_memory_mb: 1024
+    interval_sec: 30
+    service: web-api
+
+  - name: web-service
+    type: systemd
+    service_name: nginx
+    interval_sec: 30
+    service: web-api
+
+  - name: database
+    type: database
+    dsn: postgresql+psycopg://user:password@localhost:5432/app
+    query: SELECT 1
+    comparator: "=="
+    expected: 1
+    interval_sec: 30
+    service: database
+
+  - name: nginx-errors
+    type: log
+    file_path: /var/log/nginx/error.log
+    regex: "(error|crit|fatal)"
+    min_hits: 3
+    window_sec: 120
+    interval_sec: 30
+    service: web-api
+
+  - name: prometheus-up
+    type: prometheus
+    base_url: http://localhost:9090
+    query: up
+    comparator: "<"
+    threshold: 1
+    interval_sec: 60
+    service: monitoring
+
+  - name: grafana-alerts
+    type: grafana
+    base_url: http://localhost:3000
+    interval_sec: 60
+    service: monitoring
+
+  - name: datadog-monitor
+    type: datadog
+    monitor_id: 123456
+    interval_sec: 60
+    service: monitoring
+
+  - name: vps-ssh
+    type: ssh
+    host: 192.0.2.10
+    user: ubuntu
+    port: 22
+    command: "systemctl is-active nginx"
+    interval_sec: 60
+    service: vps
+
+  - name: script-check
+    type: script
+    command: "curl -fsS http://localhost:8080/health"
+    interval_sec: 30
+    service: web-api
+
+services:
+  - name: web-api
+    repo_path: /srv/web-api
+    log_paths:
+      - /var/log/nginx/error.log
+    systemd_service: web-api
+    docker_container: web-api
+    tests_command: "pytest -q"
+    runbook:
+      - action: restart_systemd
+        args:
+          service_name: web-api
+      - action: run_script
+        args:
+          command: "systemctl status web-api --no-pager"
+      - action: deploy_github
+        args:
+          repo: my-org/web-api
+          workflow: deploy.yml
+          ref: main
+          inputs:
+            environment: production
+
+  - name: vps
+    log_paths:
+      - /var/log/syslog
+    runbook:
+      - action: ssh_command
+        args:
+          host: 192.0.2.10
+          user: ubuntu
+          port: 22
+          password_env: SSH_PASSWORD
+          command: "sudo systemctl restart nginx"
