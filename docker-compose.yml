@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  uptime-agent:
+    build: .
+    container_name: uptime-agent
+    env_file:
+      - .env
+    volumes:
+      - ./config.yml:/app/config.yml:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
