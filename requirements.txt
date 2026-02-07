@@ -1,0 +1,14 @@
+pydantic
+PyYAML
+httpx
+requests
+python-dotenv
+psutil
+sqlalchemy
+psycopg[binary]
+pymysql
+fastapi
+uvicorn
+pytest
+pytest-asyncio
+respx
